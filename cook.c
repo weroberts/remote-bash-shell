@@ -38,21 +38,21 @@ main ()
 			sleep (1);
 		}/* Wait and then try again */
 	} while (result == -1);
- 
-	if(recv(clientFd, server_reply , 2000 , 0) < 0)
-    	{
-        	puts("recv failed");
-    	}
-    	puts(server_reply);
-     
-	message = "I got it!";
-	if(send(clientFd , message , strlen(message) + 1, 0) < 0)
-    	{
-        	puts("Send failed");
-        	return 1;
-    	}
-  		    		
-	close (clientFd); /* Close the socket */
+	while (1) {
+     	memset(server_reply, 0, sizeof(server_reply));
+		if(recv(clientFd, server_reply , 2000 , 0) < 0)
+    		{
+        		puts("recv failed");
+    		}
+    		puts(server_reply);
+		message = "I got it!";
+		if(send(clientFd , message , strlen(message) + 1, 0) < 0)
+    		{
+        		puts("Send failed");
+        		return 1;
+    		}
+		//close(clientFd); /* Close the socket */
+	}
 	return 0; /* Done */
 }
 /**************************************************************/
