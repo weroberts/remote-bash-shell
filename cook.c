@@ -20,7 +20,7 @@ main ()
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
 	serverLen = sizeof (serverINETAddress);
 	char message[2000];
-	port = 1763;
+	port = 1764;
 	
 	/* Create a UNIX socket, bidirectional, default protocol */
 	clientFd = socket(AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
@@ -42,7 +42,11 @@ main ()
 	while (1) {
         //Send some data
             //message = "spam, spam, spam, spam!";
-            printf("%s", "Enter a message: ");
+            if(recv(clientFd, server_reply , 2000 , 0) < 0)
+            {
+                puts("Recieve failed");
+            }   
+        	printf("%s", server_reply);
             fgets(message, MAX, stdin);
             message[strcspn(message, "\n")] = 0;
             if( send(clientFd , message , strlen(message) , 0) < 0)
@@ -51,17 +55,6 @@ main ()
                 return 1;
             }
             memset(message, 0, strlen(message));
-
-        //Receive a reply from the server
-            if(recv(clientFd, server_reply , 2000 , 0) < 0)
-            {
-                puts("Recieve failed");
-            }   
-            memset(message,0,strlen(message));
-        puts(server_reply);
-
-
-
 	}
 	return 0; /* Done */
 }
