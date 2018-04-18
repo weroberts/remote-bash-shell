@@ -33,7 +33,7 @@ main () {
 	struct sockaddr* clientSockAddrPtr; /* Ptr to client address */
 	char server_reply[2000];
 	char *message;
-	port = 1764;
+	port = 8888;
 
 	
     char line[MAX];
@@ -43,7 +43,7 @@ main () {
     char commandsLeft[MAX];
     char commandsRight[MAX];
 	//-------------------------------------------------------------
-	char prompt[] = "shell $ ";        
+	char prompt[] = "shell $";        
 	/* Ignore death-of-child signals to prevent zombies */
 	signal (SIGCHLD, SIG_IGN);
 	
@@ -59,6 +59,9 @@ main () {
     	serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
     	serverINETAddress.sin_port = htons (port);
 
+	int enable = 1;
+	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+
 	//strcpy (serverINETAddress.sun_path, "recipe"); /* Set name */
 	unlink ("recipe"); /* Remove file if it already exists */
 	bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
@@ -66,17 +69,16 @@ main () {
 	listen (serverFd, 5); /* Maximum pending connection length */
     
 	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
-	while (1) /* Loop forever */
-	{
-
-		        /* print prompt */
-        send(clientFd, prompt, strlen(prompt), 0);
+	while (1) {
+		/* print prompt */
+        if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
+			puts("send failed");
+			return 1;
+		}
         /* fill line with raw input from the user */
-		if(recv(clientFd, line, 2000 , 0) < 0)
-            {
-                puts("Recieve failed");
-            }
-
+		if(recv(clientFd, line, 2000 , 0) < 0) {
+        	puts("Recieve failed");
+        }
         if (parsePipes(line, commandsLeft, commandsRight) == 0) {
 			parseArguments(commandsLeft, argsLeft);
 			if(strcmp(argsLeft[0], "exit") == 0) {
@@ -92,11 +94,6 @@ main () {
 
             executeTwo(argsLeft, argsRight);
 		}
-
-
-
-
-
 	}
 	
 	close(clientFd);
@@ -231,8 +228,9 @@ void executeOne(char **command) {
     else {
         //wait for child
         c = wait(&status);
-        while(c != pid) {
-            c = wait(&status);
+        if (c != pid) {
+			printf("%s", "Error!");
+            //c = wait(&status);
         }
     }
 }

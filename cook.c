@@ -19,8 +19,8 @@ main ()
 	struct sockaddr* serverSockAddrPtr;
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
 	serverLen = sizeof (serverINETAddress);
-	char message[2000];
-	port = 1764;
+	char message[] = "ls";
+	port = 8888;
 	
 	/* Create a UNIX socket, bidirectional, default protocol */
 	clientFd = socket(AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
@@ -46,15 +46,15 @@ main ()
             {
                 puts("Recieve failed");
             }   
-        	printf("%s", server_reply);
-            fgets(message, MAX, stdin);
-            message[strcspn(message, "\n")] = 0;
+        	printf("%s ", server_reply);
+            //fgets(message, MAX, stdin);
+            //message[strcspn(message, "\n")] = 0;
             if( send(clientFd , message , strlen(message) , 0) < 0)
             {
                 puts("Send failed");
                 return 1;
             }
-            memset(message, 0, strlen(message));
+           //memset(message, 0, strlen(message));
 	}
 	return 0; /* Done */
 }
