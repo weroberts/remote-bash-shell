@@ -1,2 +1,5 @@
 # Ignore all output files
 *.out
+*.o
+chef
+cook
