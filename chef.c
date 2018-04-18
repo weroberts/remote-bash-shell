@@ -29,8 +29,8 @@ main () {
 	struct sockaddr_in clientINETAddress; /* Client address */
 	struct sockaddr* serverSockAddrPtr; /* Ptr to server address */
 	struct sockaddr* clientSockAddrPtr; /* Ptr to client address */
-	char message[2000],  server_reply[2000];
-
+	char server_reply[2000];
+	char *message;
 	port = 1763;
         
 	/* Ignore death-of-child signals to prevent zombies */
@@ -57,26 +57,19 @@ main () {
 	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
 	while (1) /* Loop forever */
 	{
-		/* Accept a client connection */
-		//Send some data
-    		//message = "spam, spam, spam, spam!";
-			printf("%s", "Enter a message: ");
-            fgets(message, MAX, stdin);
-            message[strcspn(message, "\n")] = 0;
-    		if( send(clientFd , message , strlen(message) , 0) < 0)
-    		{
-        		puts("Send failed");
-        		return 1;
-    		}
-			memset(message, 0, strlen(message));	
+        memset(server_reply, 0, sizeof(server_reply));
+        if(recv(clientFd, server_reply , 2000 , 0) < 0)
+            {
+                puts("recv failed");
+            }
+            puts(server_reply);
+        message = "I got it!";
+        if(send(clientFd , message , strlen(message) + 1, 0) < 0)
+            {
+                puts("Send failed");
+                return 1;
+            }
 
-   		//Receive a reply from the server
-    		if(recv(clientFd, server_reply , 2000 , 0) < 0)
-    		{
-        		puts("Recieve failed");
-    		}
-			memset(message,0,strlen(message));
-   		puts(server_reply);
 	}
 	
 	close(clientFd);

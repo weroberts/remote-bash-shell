@@ -7,6 +7,7 @@
 #include "/usr/include/arpa/inet.h"
 #include "/usr/include/netdb.h"
 
+#define MAX 2000
 #define DEFAULT_PROTOCOL 0 
 
 /****************************************************************/
@@ -14,11 +15,11 @@ main ()
 {
 	int clientFd, serverLen, result, port, client2;
 	struct sockaddr_in serverINETAddress;
-	char *message, server_reply[200];	
+	char server_reply[200];	
 	struct sockaddr* serverSockAddrPtr;
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
 	serverLen = sizeof (serverINETAddress);
-
+	char message[2000];
 	port = 1763;
 	
 	/* Create a UNIX socket, bidirectional, default protocol */
@@ -39,19 +40,28 @@ main ()
 		}/* Wait and then try again */
 	} while (result == -1);
 	while (1) {
-     	memset(server_reply, 0, sizeof(server_reply));
-		if(recv(clientFd, server_reply , 2000 , 0) < 0)
-    		{
-        		puts("recv failed");
-    		}
-    		puts(server_reply);
-		message = "I got it!";
-		if(send(clientFd , message , strlen(message) + 1, 0) < 0)
-    		{
-        		puts("Send failed");
-        		return 1;
-    		}
-		//close(clientFd); /* Close the socket */
+        //Send some data
+            //message = "spam, spam, spam, spam!";
+            printf("%s", "Enter a message: ");
+            fgets(message, MAX, stdin);
+            message[strcspn(message, "\n")] = 0;
+            if( send(clientFd , message , strlen(message) , 0) < 0)
+            {
+                puts("Send failed");
+                return 1;
+            }
+            memset(message, 0, strlen(message));
+
+        //Receive a reply from the server
+            if(recv(clientFd, server_reply , 2000 , 0) < 0)
+            {
+                puts("Recieve failed");
+            }   
+            memset(message,0,strlen(message));
+        puts(server_reply);
+
+
+
 	}
 	return 0; /* Done */
 }
