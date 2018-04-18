@@ -47,14 +47,15 @@ main ()
                 puts("Recieve failed");
             }   
         	printf("%s ", server_reply);
-            //fgets(message, MAX, stdin);
-            //message[strcspn(message, "\n")] = 0;
+            fgets(message, MAX, stdin);
+            message[strcspn(message, "\n")] = 0;
             if( send(clientFd , message , strlen(message) , 0) < 0)
             {
                 puts("Send failed");
                 return 1;
             }
-           //memset(message, 0, strlen(message));
+            memset(message, 0, strlen(message));
+			fflush(stdin);
 	}
 	return 0; /* Done */
 }

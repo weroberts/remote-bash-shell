@@ -71,6 +71,7 @@ main () {
 	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
 	while (1) {
 		/* print prompt */
+		memset(line, 0, strlen(line));
         if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
 			puts("send failed");
 			return 1;
@@ -230,7 +231,7 @@ void executeOne(char **command) {
         c = wait(&status);
         if (c != pid) {
 			printf("%s", "Error!");
-            //c = wait(&status);
+            c = wait(&status);
         }
     }
 }
