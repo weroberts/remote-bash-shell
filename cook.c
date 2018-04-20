@@ -15,7 +15,8 @@ main ()
 {
 	int clientFd, serverLen, result, port, client2;
 	struct sockaddr_in serverINETAddress;
-	char server_reply[200];	
+	char server_reply[200];
+	char server_reply2[200];
 	struct sockaddr* serverSockAddrPtr;
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
 	serverLen = sizeof (serverINETAddress);
@@ -42,11 +43,11 @@ main ()
 	while (1) {
         //Send some data
             //message = "spam, spam, spam, spam!";
-            if(recv(clientFd, server_reply , 2000 , 0) < 0)
+            /*if(recv(clientFd, server_reply , 2000 , 0) < 0)
             {
                 puts("Recieve failed");
-            }   
-        	printf("%s ", server_reply);
+            }*/  
+        	printf("%s ", "lilbash $");
             fgets(message, MAX, stdin);
             message[strcspn(message, "\n")] = 0;
             if( send(clientFd , message , strlen(message) , 0) < 0)
@@ -55,7 +56,13 @@ main ()
                 return 1;
             }
             memset(message, 0, strlen(message));
-			fflush(stdin);
+		
+			/*if(recv(clientFd, server_reply2 , 2000 , 0) < 0)
+            {   
+                puts("Recieve failed");
+            }   
+            printf("%s ", server_reply2);*/
+
 	}
 	return 0; /* Done */
 }

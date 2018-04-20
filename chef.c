@@ -52,6 +52,12 @@ main () {
 	
 	clientSockAddrPtr = (struct sockaddr*) &clientINETAddress;
 	clientLen = sizeof (clientINETAddress);
+
+	int outputFd;
+	char *buffer =  malloc(MAX);
+	char template[] = "/tmp/myFileXXXXXX";
+	int savedStdout;
+	//savedStdout = du/p(1);
 	
 	/* Create a UNIX socket, bidirectional, default protocol */
 	serverFd = socket (AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
@@ -70,12 +76,13 @@ main () {
     
 	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
 	while (1) {
+		//outputFd = mkstemp(template);
 		/* print prompt */
 		memset(line, 0, strlen(line));
-        if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
+        /*if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
 			puts("send failed");
 			return 1;
-		}
+		}*/
         /* fill line with raw input from the user */
 		if(recv(clientFd, line, 2000 , 0) < 0) {
         	puts("Recieve failed");
@@ -84,8 +91,10 @@ main () {
 			parseArguments(commandsLeft, argsLeft);
 			if(strcmp(argsLeft[0], "exit") == 0) {
         		break;
-        	}	
-        	executeOne(argsLeft);
+        	}
+			close(savedStdout);	
+        	executeOne(argsLeft, outputFd);
+			//d/up2(savedStdout, 1); // set back to standard out
         } else {
             parseArguments(commandsLeft, argsLeft);
             parseArguments(commandsRight, argsRight);
@@ -95,6 +104,14 @@ main () {
 
             executeTwo(argsLeft, argsRight);
 		}
+
+		//read(outputFd, &buffer, MAX);
+        //if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
+        //    puts("send failed");
+        //    return 1;
+        //}
+
+		close(outputFd);
 	}
 	
 	close(clientFd);
@@ -208,7 +225,7 @@ void executeTwo(char **argsLeft, char **argsRight)
 /** Executes "command" through execvp in child process 
 *   @param **command array of strings that make up a command 
 */
-void executeOne(char **command) {
+void executeOne(char **command, int outputFd) {
 
     int status;
     pid_t pid;
@@ -216,6 +233,7 @@ void executeOne(char **command) {
 
     pid = fork();
     if(pid == 0) {
+		//dup2(outputFd, 1);
         execvp(*command, command);
         /*statement should not execute */
         fprintf(stderr, "Failed to execute command\n");
