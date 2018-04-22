@@ -33,6 +33,7 @@ main () {
 	struct sockaddr* clientSockAddrPtr; /* Ptr to client address */
 	char server_reply[2000];
 	char *message;
+	char asdf[400];
 	port = 8888;
 
 	
@@ -56,6 +57,7 @@ main () {
 	int outputFd;
 	char *buffer =  malloc(MAX);
 	char template[] = "/tmp/myFileXXXXXX";
+	FILE* outputFp;
 	int savedStdout;
 	//savedStdout = du/p(1);
 	
@@ -76,7 +78,10 @@ main () {
     
 	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
 	while (1) {
-		//outputFd = mkstemp(template);
+		outputFd = mkstemp(template);
+		outputFp = fdopen(outputFd, "w");
+		fclose(outputFp);
+		dup2(outputFd, 1);
 		/* print prompt */
 		memset(line, 0, strlen(line));
         /*if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
@@ -104,12 +109,14 @@ main () {
 
             executeTwo(argsLeft, argsRight);
 		}
-
-		//read(outputFd, &buffer, MAX);
-        //if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
-        //    puts("send failed");
-        //    return 1;
-        //}
+		outputFp = fdopen(outputFd, "r");
+		read(outputFd, &buffer, MAX);
+		fscanf(outputFp, "%s", asdf);
+		fclose(outputFp);
+        if (send(clientFd, asdf, strlen(asdf), 0) < 0) {
+            puts("send failed");
+            return 1;
+        }
 
 		close(outputFd);
 	}
@@ -233,7 +240,6 @@ void executeOne(char **command, int outputFd) {
 
     pid = fork();
     if(pid == 0) {
-		//dup2(outputFd, 1);
         execvp(*command, command);
         /*statement should not execute */
         fprintf(stderr, "Failed to execute command\n");
