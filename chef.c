@@ -152,25 +152,28 @@ void parseArguments(char *inputString, char **argumentsArray) {
     }
     argumentsArray[x] = NULL;
 }
+
 /** Executes "argsLeft" and "argsRight" through execvp in child process 
 *   @param **argsLeft array of strings that make up a command on the left of a pipe
 *   @param **argsRight array of strings that make up a command on the right of a pipe
 */
-void executeTwo(char **argsLeft, char **argsRight)
-{
-    int fd[2]; 
+void executeTwo(char **argsLeft, char **argsRight) {
+    int fd[2];
     pid_t p1, p2;
- 
+
     pipe(fd);
     p1 = fork();
+
     if (p1 == 0) {
         close(fd[0]);
         dup2(fd[1], 1);
         close(fd[1]);
-        execvp(*argsLeft, argsLeft); 
-    } 
+        execvp(*argsLeft, argsLeft);
+    }
     else {
+
         p2 = fork();
+
         if (p2 == 0) {
             close(fd[1]);
             dup2(fd[0], 0);
