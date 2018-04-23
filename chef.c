@@ -33,7 +33,6 @@ main () {
 	struct sockaddr* clientSockAddrPtr; /* Ptr to client address */
 	char server_reply[2000];
 	char *message;
-	char asdf[400];
 	port = 8888;
 
 	
@@ -47,6 +46,7 @@ main () {
 	char prompt[] = "shell $";        
 	/* Ignore death-of-child signals to prevent zombies */
 	signal (SIGCHLD, SIG_IGN);
+		char str[200];
 	
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
 	serverLen = sizeof (serverINETAddress);
@@ -55,10 +55,14 @@ main () {
 	clientLen = sizeof (clientINETAddress);
 
 	int outputFd;
+	int fp;
+	int outputCopy;
 	char *buffer =  malloc(MAX);
 	char template[] = "/tmp/myFileXXXXXX";
-	FILE* outputFp;
 	int savedStdout;
+		outputFd = mkstemp(template);
+	//close(savedStdout);
+	//close(outputFd);
 	//savedStdout = du/p(1);
 	
 	/* Create a UNIX socket, bidirectional, default protocol */
@@ -66,8 +70,10 @@ main () {
 	serverINETAddress.sin_family = AF_INET; /* Set domain type */
     	serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
     	serverINETAddress.sin_port = htons (port);
+	//char str[200];
 
 	int enable = 1;
+	int count = 0;
 	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 
 	//strcpy (serverINETAddress.sun_path, "recipe"); /* Set name */
@@ -78,16 +84,12 @@ main () {
     
 	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
 	while (1) {
-		outputFd = mkstemp(template);
-		outputFp = fdopen(outputFd, "w");
-		fclose(outputFp);
-		dup2(outputFd, 1);
+		//fp = fdopen(outputFd, "r+");
+		if (fp == NULL) {
+			fprintf(stderr, "%s\n", "Failed to open fp!");
+		}
 		/* print prompt */
 		memset(line, 0, strlen(line));
-        /*if (send(clientFd, prompt, strlen(prompt), 0) < 0) {
-			puts("send failed");
-			return 1;
-		}*/
         /* fill line with raw input from the user */
 		if(recv(clientFd, line, 2000 , 0) < 0) {
         	puts("Recieve failed");
@@ -97,9 +99,15 @@ main () {
 			if(strcmp(argsLeft[0], "exit") == 0) {
         		break;
         	}
-			close(savedStdout);	
+			//close(1); // remove stdout from slot1
+			//dup2(outputFd, 1); // set outputFd to slot 1	
+				
+			savedStdout = dup(1); //save stdout
+			dup2(outputFd, 1);
         	executeOne(argsLeft, outputFd);
-			//d/up2(savedStdout, 1); // set back to standard out
+			// return to stdout
+			dup2(savedStdout, 1);
+			close(savedStdout);
         } else {
             parseArguments(commandsLeft, argsLeft);
             parseArguments(commandsRight, argsRight);
@@ -109,54 +117,64 @@ main () {
 
             executeTwo(argsLeft, argsRight);
 		}
-		outputFp = fdopen(outputFd, "r");
-		read(outputFd, &buffer, MAX);
-		fscanf(outputFp, "%s", asdf);
-		fclose(outputFp);
-        if (send(clientFd, asdf, strlen(asdf), 0) < 0) {
-            puts("send failed");
-            return 1;
-        }
+		lseek (outputFd, (off_t) 0, SEEK_SET);
+		//sendFile(outputFd);
+		//strcpy(str, "");
+    	readLine (outputFd, str); /* Read lines until end-of-input */
+		//if (fclose(fp) != 0) {
+		//	fprintf(stderr, "%s\n", "Error closing file pointer!");
+		//}
+		fprintf(stderr, "%s\n", str);
+            if( send(clientFd , str , strlen(str) , 0) < 0)
+            {
+                puts("Send failed");
+                return 1;
+            }
 
-		close(outputFd);
+		memset(str, 0, strlen(str));
+		*str = '\0';
+		//readRecipe(outputFd);
+		//close(outputFd);
+		//fp = fdopen(outputFd);
+		ftruncate(outputFd, 0);
+		lseek (outputFd, (off_t) 0, SEEK_SET);
 	}
-	
+	close(outputFd);
 	close(clientFd);
 }
 
 /****************************************************************/
 
-writeRecipe (fd)
-int fd;
-{
-	static char* line1 = "spam, spam, spam, spam,";
-	static char* line2 = "spam, and spam.";
-	write (fd, line1, strlen (line1) + 1); /* Write first line */
-	write (fd, line2, strlen (line2) + 1); /* Write second line */
-}
-
-readLine (fd, str)
-int fd;
-char* str;
+readLine (int fd, char *str)
 /* Read a single NULL-terminated line */
 {
     int n;
     do /* Read characters until NULL or end-of-input */
     {
-        n = read (fd,str, 1); /* Read one character */
+        n = read (fd, str, 1); /* Read one character */
     }
     while ((n > 0) && *str++ != '\0');
     return (n > 0); /* Return false if end-of-input */
 }
 
-
 readRecipe (fd)
 int fd;
 {
     char str[200];
-    while (readLine (fd, str)) /* Read lines until end-of-input */
-        printf ("%s\n", str); /* Echo line from socket */
+    printf(stderr, "%s\n", str); /* Echo line from socket */
 }
+
+
+/*sendFile (fd, sendingFd)
+int fd;
+int sendingFd;
+{
+    char str[200];
+    while (readLine (fd)) 
+        if (send(sendingFd, str, strlen(str), 0) < 0) {
+			fprintf(stdout, "send failed");
+		}
+}*/
 
 /** Parse the inputString into an 2 arrays separated by pipes
 *   @param **inputString String of input
@@ -232,7 +250,7 @@ void executeTwo(char **argsLeft, char **argsRight)
 /** Executes "command" through execvp in child process 
 *   @param **command array of strings that make up a command 
 */
-void executeOne(char **command, int outputFd) {
+void executeOne(char **command) {
 
     int status;
     pid_t pid;
@@ -259,3 +277,4 @@ void executeOne(char **command, int outputFd) {
         }
     }
 }
+

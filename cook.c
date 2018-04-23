@@ -29,6 +29,11 @@ main ()
 	serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
     	serverINETAddress.sin_port = htons (port);
 
+	struct timeval tv;
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	setsockopt(clientFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+
 	//strcpy (serverINETAddress.sun_path, "recipe"); /* Server name */
 	//listen (clientFd, 5); /* Maximum pending connection length */
     	//bind (clientFd, serverSockAddrPtr, serverLen); /* Create file */
@@ -55,14 +60,14 @@ main ()
                 puts("Send failed");
                 return 1;
             }
-            memset(message, 0, strlen(message));
 		
-			/*if(recv(clientFd, server_reply2 , 2000 , 0) < 0)
-            {   
-                puts("Recieve failed");
-            }   
-            printf("%s ", server_reply2);*/
-
+            memset(message, 0, strlen(message));
+			
+			if(recv(clientFd, server_reply2 , 2000 , 0) < 0) {
+                fprintf(stderr, "%s\n", "Recieve failed");
+			}
+			printf("%s", server_reply2);
+			memset(server_reply2, 0, strlen(server_reply2));
 	}
 	return 0; /* Done */
 }
