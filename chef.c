@@ -31,7 +31,7 @@ main () {
 	struct sockaddr_in clientINETAddress; /* Client address */
 	struct sockaddr* serverSockAddrPtr; /* Ptr to server address */
 	struct sockaddr* clientSockAddrPtr; /* Ptr to client address */
-	char server_reply[2000];
+	char server_reply[MAX];
 	char *message;
 	port = 8888;
 
@@ -46,7 +46,7 @@ main () {
 	char prompt[] = "shell $";        
 	/* Ignore death-of-child signals to prevent zombies */
 	signal (SIGCHLD, SIG_IGN);
-		char str[200];
+	char str[200];
 	
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
 	serverLen = sizeof (serverINETAddress);
@@ -54,29 +54,19 @@ main () {
 	clientSockAddrPtr = (struct sockaddr*) &clientINETAddress;
 	clientLen = sizeof (clientINETAddress);
 
-	int outputFd;
-	int fp;
-	int outputCopy;
-	char *buffer =  malloc(MAX);
 	char template[] = "/tmp/myFileXXXXXX";
 	int savedStdout;
-		outputFd = mkstemp(template);
-	//close(savedStdout);
-	//close(outputFd);
-	//savedStdout = du/p(1);
+	int outputFd = mkstemp(template);
 	
 	/* Create a UNIX socket, bidirectional, default protocol */
 	serverFd = socket (AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
 	serverINETAddress.sin_family = AF_INET; /* Set domain type */
-    	serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
-    	serverINETAddress.sin_port = htons (port);
-	//char str[200];
+    serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
+    serverINETAddress.sin_port = htons (port);
 
 	int enable = 1;
-	int count = 0;
 	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 
-	//strcpy (serverINETAddress.sun_path, "recipe"); /* Set name */
 	unlink ("recipe"); /* Remove file if it already exists */
 	bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
 
@@ -84,10 +74,6 @@ main () {
     
 	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
 	while (1) {
-		//fp = fdopen(outputFd, "r+");
-		if (fp == NULL) {
-			fprintf(stderr, "%s\n", "Failed to open fp!");
-		}
 		/* print prompt */
 		memset(line, 0, strlen(line));
         /* fill line with raw input from the user */
@@ -117,26 +103,19 @@ main () {
 
             executeTwo(argsLeft, argsRight);
 		}
+		/* set cursor to beginning of file */
 		lseek (outputFd, (off_t) 0, SEEK_SET);
-		//sendFile(outputFd);
-		//strcpy(str, "");
     	readLine (outputFd, str); /* Read lines until end-of-input */
-		//if (fclose(fp) != 0) {
-		//	fprintf(stderr, "%s\n", "Error closing file pointer!");
-		//}
-		fprintf(stderr, "%s\n", str);
-            if( send(clientFd , str , strlen(str) , 0) < 0)
-            {
-                puts("Send failed");
-                return 1;
-            }
-
+        if( send(clientFd , str , strlen(str) , 0) < 0) {
+        	puts("Send failed");
+            return 1;
+        }
+		/* clear str */
 		memset(str, 0, strlen(str));
-		*str = '\0';
-		//readRecipe(outputFd);
-		//close(outputFd);
-		//fp = fdopen(outputFd);
+		
+		/* clear outputFd */
 		ftruncate(outputFd, 0);
+		/* set cursor to beginning of file */
 		lseek (outputFd, (off_t) 0, SEEK_SET);
 	}
 	close(outputFd);
@@ -156,25 +135,6 @@ readLine (int fd, char *str)
     while ((n > 0) && *str++ != '\0');
     return (n > 0); /* Return false if end-of-input */
 }
-
-readRecipe (fd)
-int fd;
-{
-    char str[200];
-    printf(stderr, "%s\n", str); /* Echo line from socket */
-}
-
-
-/*sendFile (fd, sendingFd)
-int fd;
-int sendingFd;
-{
-    char str[200];
-    while (readLine (fd)) 
-        if (send(sendingFd, str, strlen(str), 0) < 0) {
-			fprintf(stdout, "send failed");
-		}
-}*/
 
 /** Parse the inputString into an 2 arrays separated by pipes
 *   @param **inputString String of input
