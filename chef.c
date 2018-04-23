@@ -26,6 +26,21 @@
   * @return 0 to signify the program's end
 */
 main () {
+    char *argsLeft[MAX];
+    char *argsRight[MAX];
+    char commandsLeft[MAX];
+    char commandsRight[MAX];
+    //-------------------------------------------------------------
+    char prompt[] = "shell $";
+    /* Ignore death-of-child signals to prevent zombies */
+    char str[200];
+    char line[MAX];
+
+    char template[] = "/tmp/myFileXXXXXX";
+    int savedStdout;
+    int outputFd = mkstemp(template);
+
+	//---------------socket configuration----------------------
 	int serverFd, clientFd, serverLen, clientLen, client2, port;
 	struct sockaddr_in serverINETAddress; /* Server address */
 	struct sockaddr_in clientINETAddress; /* Client address */
@@ -35,44 +50,31 @@ main () {
 	char *message;
 	port = 8888;
 
-	
-    char line[MAX];
-
-    char *argsLeft[MAX];
-    char *argsRight[MAX];
-    char commandsLeft[MAX];
-    char commandsRight[MAX];
-	//-------------------------------------------------------------
-	char prompt[] = "shell $";        
-	/* Ignore death-of-child signals to prevent zombies */
 	signal (SIGCHLD, SIG_IGN);
-	char str[200];
 	
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
-	serverLen = sizeof (serverINETAddress);
-	
-	clientSockAddrPtr = (struct sockaddr*) &clientINETAddress;
-	clientLen = sizeof (clientINETAddress);
+    serverLen = sizeof (serverINETAddress);
 
-	char template[] = "/tmp/myFileXXXXXX";
-	int savedStdout;
-	int outputFd = mkstemp(template);
-	
-	/* Create a UNIX socket, bidirectional, default protocol */
-	serverFd = socket (AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
-	serverINETAddress.sin_family = AF_INET; /* Set domain type */
+    clientSockAddrPtr = (struct sockaddr*) &clientINETAddress;
+    clientLen = sizeof (clientINETAddress);
+
+	unlink ("recipe"); /* Remove file if it already exists */
+
+	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
+
+    /* Create a UNIX socket, bidirectional, default protocol */
+    serverFd = socket (AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
+    serverINETAddress.sin_family = AF_INET; /* Set domain type */
     serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
     serverINETAddress.sin_port = htons (port);
 
-	int enable = 1;
-	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 
-	unlink ("recipe"); /* Remove file if it already exists */
-	bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
+    bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
 
-	listen (serverFd, 5); /* Maximum pending connection length */
-    
-	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
+    listen (serverFd, 5); /* Maximum pending connection length */
+
+    clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
+	
 	while (1) {
 		/* print prompt */
 		memset(line, 0, strlen(line));
@@ -80,6 +82,9 @@ main () {
 		if(recv(clientFd, line, 2000 , 0) < 0) {
         	puts("Recieve failed");
         }
+		savedStdout = dup(1); //save stdout
+        dup2(outputFd, 1);
+
         if (parsePipes(line, commandsLeft, commandsRight) == 0) {
 			parseArguments(commandsLeft, argsLeft);
 			if(strcmp(argsLeft[0], "exit") == 0) {
@@ -88,12 +93,10 @@ main () {
 			//close(1); // remove stdout from slot1
 			//dup2(outputFd, 1); // set outputFd to slot 1	
 				
-			savedStdout = dup(1); //save stdout
-			dup2(outputFd, 1);
+			//savedStdout = dup(1); //save stdout
+			//dup2(outputFd, 1);
         	executeOne(argsLeft, outputFd);
 			// return to stdout
-			dup2(savedStdout, 1);
-			close(savedStdout);
         } else {
             parseArguments(commandsLeft, argsLeft);
             parseArguments(commandsRight, argsRight);
@@ -103,6 +106,8 @@ main () {
 
             executeTwo(argsLeft, argsRight);
 		}
+			dup2(savedStdout, 1);
+			close(savedStdout);
 		/* set cursor to beginning of file */
 		lseek (outputFd, (off_t) 0, SEEK_SET);
     	readLine (outputFd, str); /* Read lines until end-of-input */
