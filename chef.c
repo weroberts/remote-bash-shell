@@ -58,7 +58,9 @@ int outputFd = mkstemp(template);
     serverINETAddress.sin_port = htons (port);
     bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
     listen (serverFd, 5); /* Maximum pending connection length */
-    clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
+    fprintf(stderr, "\nlilbash is listening for connections on port[%d]...\n", port);
+	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
+	
 	while (1) {
 		/* print prompt */
 		memset(line, 0, strlen(line));
@@ -84,7 +86,7 @@ int outputFd = mkstemp(template);
             parseArguments(commandsRight, argsRight);
 			if((strcmp(argsRight[0], "exit") == 0) || (strcmp(argsLeft[0], "exit") == 0)) {
                 break;
-            }
+           }
             executeTwo(argsLeft, argsRight);
 		}
 			dup2(savedStdout, 1);
