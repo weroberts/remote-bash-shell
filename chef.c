@@ -5,7 +5,6 @@
   * @course     CSIS-380-01/CSIS-480-01
   * @assignment     lab10
 */
-
 #include <stdio.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -17,11 +16,9 @@
 #include "/usr/include/netdb.h"
 #include <string.h>
 #include <sys/types.h>
-
 #define MAX 2000
 #define DEFAULT_PROTOCOL 0
 /**************************************************************/
-
 /** Main driver
   * @return 0 to signify the program's end
 */
@@ -35,11 +32,9 @@ main () {
     /* Ignore death-of-child signals to prevent zombies */
     char str[200];
     char line[MAX];
-
     char template[] = "/tmp/myFileXXXXXX";
     int savedStdout;
-    int outputFd = mkstemp(template);
-
+int outputFd = mkstemp(template);
 	//---------------socket configuration----------------------
 	int serverFd, clientFd, serverLen, clientLen, client2, port;
 	struct sockaddr_in serverINETAddress; /* Server address */
@@ -49,32 +44,21 @@ main () {
 	char server_reply[MAX];
 	char *message;
 	port = 8888;
-
 	signal (SIGCHLD, SIG_IGN);
-	
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
     serverLen = sizeof (serverINETAddress);
-
     clientSockAddrPtr = (struct sockaddr*) &clientINETAddress;
     clientLen = sizeof (clientINETAddress);
-
 	unlink ("recipe"); /* Remove file if it already exists */
-
 	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
-
     /* Create a UNIX socket, bidirectional, default protocol */
     serverFd = socket (AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
     serverINETAddress.sin_family = AF_INET; /* Set domain type */
     serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
     serverINETAddress.sin_port = htons (port);
-
-
     bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
-
     listen (serverFd, 5); /* Maximum pending connection length */
-
     clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
-	
 	while (1) {
 		/* print prompt */
 		memset(line, 0, strlen(line));
@@ -84,7 +68,6 @@ main () {
         }
 		savedStdout = dup(1); //save stdout
         dup2(outputFd, 1);
-
         if (parsePipes(line, commandsLeft, commandsRight) == 0) {
 			parseArguments(commandsLeft, argsLeft);
 			if(strcmp(argsLeft[0], "exit") == 0) {
@@ -92,7 +75,6 @@ main () {
         	}
 			//close(1); // remove stdout from slot1
 			//dup2(outputFd, 1); // set outputFd to slot 1	
-				
 			//savedStdout = dup(1); //save stdout
 			//dup2(outputFd, 1);
         	executeOne(argsLeft, outputFd);
@@ -103,7 +85,6 @@ main () {
 			if((strcmp(argsRight[0], "exit") == 0) || (strcmp(argsLeft[0], "exit") == 0)) {
                 break;
             }
-
             executeTwo(argsLeft, argsRight);
 		}
 			dup2(savedStdout, 1);
@@ -126,9 +107,7 @@ main () {
 	close(outputFd);
 	close(clientFd);
 }
-
 /****************************************************************/
-
 readLine (int fd, char *str)
 /* Read a single NULL-terminated line */
 {
@@ -140,7 +119,6 @@ readLine (int fd, char *str)
     while ((n > 0) && *str++ != '\0');
     return (n > 0); /* Return false if end-of-input */
 }
-
 /** Parse the inputString into an 2 arrays separated by pipes
 *   @param **inputString String of input
 *   @param **commandsLeft Commands on the left of the pipe
@@ -158,7 +136,6 @@ int parsePipes(char *inputString, char *commandsLeft, char *commandsRight) {
     strcpy(commandsRight, token);
     return 1;
 }
-
 /** Parse the inputString into an array, separated by spaces
 *   @param **inputString String of input
 *   @param **argumentsArray Array of arguments
@@ -175,7 +152,6 @@ void parseArguments(char *inputString, char **argumentsArray) {
     }
     argumentsArray[x] = NULL;
 }
-
 /** Executes "argsLeft" and "argsRight" through execvp in child process 
 *   @param **argsLeft array of strings that make up a command on the left of a pipe
 *   @param **argsRight array of strings that make up a command on the right of a pipe
@@ -187,7 +163,6 @@ void executeTwo(char **argsLeft, char **argsRight)
  
     pipe(fd);
     p1 = fork();
-
     if (p1 == 0) {
         close(fd[0]);
         dup2(fd[1], 1);
@@ -195,9 +170,7 @@ void executeTwo(char **argsLeft, char **argsRight)
         execvp(*argsLeft, argsLeft); 
     } 
     else {
-
         p2 = fork();
-
         if (p2 == 0) {
             close(fd[1]);
             dup2(fd[0], 0);
@@ -216,11 +189,9 @@ void executeTwo(char **argsLeft, char **argsRight)
 *   @param **command array of strings that make up a command 
 */
 void executeOne(char **command) {
-
     int status;
     pid_t pid;
     pid_t c;
-
     pid = fork();
     if(pid == 0) {
         execvp(*command, command);
