@@ -55,6 +55,9 @@ main ()
         	printf("%s ", "lilbash $");
             fgets(message, MAX, stdin);
             message[strcspn(message, "\n")] = 0;
+			if (strcmp(message, "exit") == 0) {
+				break;
+			}
             if( send(clientFd , message , strlen(message) , 0) < 0)
             {
                 puts("Send failed");
