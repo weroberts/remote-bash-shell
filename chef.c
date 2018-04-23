@@ -59,52 +59,54 @@ int outputFd = mkstemp(template);
     bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
     listen (serverFd, 5); /* Maximum pending connection length */
     fprintf(stderr, "\nlilbash is listening for connections on port[%d]...\n", port);
-	clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
 	
 	while (1) {
-		/* print prompt */
-		memset(line, 0, strlen(line));
-        /* fill line with raw input from the user */
-		if(recv(clientFd, line, 2000 , 0) < 0) {
-        	puts("Recieve failed");
-        }
-		savedStdout = dup(1); //save stdout
-        dup2(outputFd, 1);
-        if (parsePipes(line, commandsLeft, commandsRight) == 0) {
-			parseArguments(commandsLeft, argsLeft);
-			if(strcmp(argsLeft[0], "exit") == 0) {
-        		break;
-        	}
-			//close(1); // remove stdout from slot1
-			//dup2(outputFd, 1); // set outputFd to slot 1	
-			//savedStdout = dup(1); //save stdout
-			//dup2(outputFd, 1);
-        	executeOne(argsLeft, outputFd);
-			// return to stdout
-        } else {
-            parseArguments(commandsLeft, argsLeft);
-            parseArguments(commandsRight, argsRight);
-			if((strcmp(argsRight[0], "exit") == 0) || (strcmp(argsLeft[0], "exit") == 0)) {
-                break;
-           }
-            executeTwo(argsLeft, argsRight);
-		}
-			dup2(savedStdout, 1);
-			close(savedStdout);
-		/* set cursor to beginning of file */
-		lseek (outputFd, (off_t) 0, SEEK_SET);
-    	readLine (outputFd, str); /* Read lines until end-of-input */
-        if( send(clientFd , str , strlen(str) , 0) < 0) {
-        	puts("Send failed");
-            return 1;
-        }
-		/* clear str */
-		memset(str, 0, strlen(str));
+		clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
+		if (fork() == 0) {
+			while (1) {
+				/* print prompt */
+				memset(line, 0, strlen(line));
+        		/* fill line with raw input from the user */
+				if(recv(clientFd, line, 2000 , 0) < 0) {
+        			puts("Recieve failed");
+        		}
+				savedStdout = dup(1); //save stdout
+        		dup2(outputFd, 1);
+        		if (parsePipes(line, commandsLeft, commandsRight) == 0) {
+					parseArguments(commandsLeft, argsLeft);
+					if(strcmp(argsLeft[0], "exit") == 0) {
+        				break;
+        			}
+        			executeOne(argsLeft, outputFd);
+        		} else {
+            		parseArguments(commandsLeft, argsLeft);
+            		parseArguments(commandsRight, argsRight);
+					if ((strcmp(argsRight[0], "exit") == 0) || (strcmp(argsLeft[0], "exit") == 0)) {
+                		break;
+           		}
+            		executeTwo(argsLeft, argsRight);
+				}
+					dup2(savedStdout, 1);
+					close(savedStdout);
+				/* set cursor to beginning of file */
+				lseek (outputFd, (off_t) 0, SEEK_SET);
+    			readLine (outputFd, str); /* Read lines until end-of-input */
+        		if( send(clientFd , str , strlen(str) , 0) < 0) {
+        			puts("Send failed");
+            		return 1;
+        		}
+				/* clear str */
+				memset(str, 0, strlen(str));
 		
-		/* clear outputFd */
-		ftruncate(outputFd, 0);
-		/* set cursor to beginning of file */
-		lseek (outputFd, (off_t) 0, SEEK_SET);
+				/* clear outputFd */
+				ftruncate(outputFd, 0);
+				/* set cursor to beginning of file */
+				lseek (outputFd, (off_t) 0, SEEK_SET);
+			}
+			close(clientFd);
+		} else {
+			close(clientFd);
+		}
 	}
 	close(outputFd);
 	close(clientFd);
