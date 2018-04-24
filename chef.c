@@ -62,6 +62,7 @@ int outputFd = mkstemp(template);
 	
 	while (1) {
 		clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
+    	fprintf(stderr, "\nClient connection established on port[%d]...\n", port);
 		if (fork() == 0) {
 			while (1) {
 				/* print prompt */
