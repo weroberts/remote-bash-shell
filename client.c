@@ -1,3 +1,10 @@
+/** client.c - The client side of the socket 
+  *
+  * @author     Will Roberts, Jacob Vangore
+  * @id         1734698,1721023
+  * @course     CSIS-380-01/CSIS-480-01
+  * @assignment     lab11
+*/
 #include <stdio.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -10,9 +17,10 @@
 #define MAX 2000
 #define DEFAULT_PROTOCOL 0 
 
-/****************************************************************/
-main ()
-{
+/** Main driver
+  * @return 0 to signify the program's end
+*/
+int main () {
 	int clientFd, serverLen, result, port, client2;
 	struct sockaddr_in serverINETAddress;
 	char server_reply[200];
@@ -23,7 +31,7 @@ main ()
 	char message[] = "ls";
 	port = 8888;
 	
-	/* Create a UNIX socket, bidirectional, default protocol */
+	/* Create an INET socket, bidirectional, default protocol */
 	clientFd = socket(AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
 	serverINETAddress.sin_family = AF_INET; /* Server domain */
 	serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
@@ -34,10 +42,6 @@ main ()
 	tv.tv_usec = 0;
 	setsockopt(clientFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
-	//strcpy (serverINETAddress.sun_path, "recipe"); /* Server name */
-	//listen (clientFd, 5); /* Maximum pending connection length */
-    	//bind (clientFd, serverSockAddrPtr, serverLen); /* Create file */
-
 	do /* Loop until a connection is made with the server */
 	{
 		result = connect (clientFd, serverSockAddrPtr, serverLen);
@@ -46,20 +50,13 @@ main ()
 		}/* Wait and then try again */
 	} while (result == -1);
 	while (1) {
-        //Send some data
-            //message = "spam, spam, spam, spam!";
-            /*if(recv(clientFd, server_reply , 2000 , 0) < 0)
-            {
-                puts("Recieve failed");
-            }*/  
         	printf("%s ", "lilbash $");
             fgets(message, MAX, stdin);
             message[strcspn(message, "\n")] = 0;
 			if (strcmp(message, "exit") == 0) {
 				break;
 			}
-            if( send(clientFd , message , strlen(message) , 0) < 0)
-            {
+            if( send(clientFd , message , strlen(message) , 0) < 0) {
                 puts("Send failed");
                 return 1;
             }
@@ -74,36 +71,3 @@ main ()
 	}
 	return 0; /* Done */
 }
-/**************************************************************/
-readRecipe (fd)
-int fd;
-{
-	char str[200];
-	while (readLine (fd, str)) /* Read lines until end-of-input */
-		printf ("%s\n", str); /* Echo line from socket */
-}
-/**************************************************************/
-readLine (fd, str)
-
-int fd;
-char* str;
-/* Read a single NULL-terminated line */
-{
-	int n;
-	do /* Read characters until NULL or end-of-input */
-	{
-		n = read (fd,str, 1); /* Read one character */
-	}
-	while ((n > 0) && *str++ != '\0');
-	return (n > 0); /* Return false if end-of-input */
-}
-
-writeRecipe (fd)
-int fd;
-{
-    static char* line1 = "Got it.";
-    static char* line2 = "They got it.";
-    write (fd, line1, strlen (line1) + 1); /* Write first line */
-    write (fd, line2, strlen (line2) + 1); /* Write second line */
-}
-

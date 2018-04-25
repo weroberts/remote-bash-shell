@@ -1,9 +1,9 @@
-/** Chef.c - The server side of the socket 
+/** server.c - The server side of the socket 
   *
   * @author     Will Roberts, Jacob Vangore
   * @id         1734698,1721023
   * @course     CSIS-380-01/CSIS-480-01
-  * @assignment     lab10
+  * @assignment     lab11
 */
 #include <stdio.h>
 #include <signal.h>
@@ -16,25 +16,27 @@
 #include "/usr/include/netdb.h"
 #include <string.h>
 #include <sys/types.h>
+
 #define MAX 2000
 #define DEFAULT_PROTOCOL 0
-/**************************************************************/
+
 /** Main driver
   * @return 0 to signify the program's end
 */
-main () {
+int main () {
+	//--------------commands configuration------------------------
     char *argsLeft[MAX];
     char *argsRight[MAX];
     char commandsLeft[MAX];
     char commandsRight[MAX];
-    //-------------------------------------------------------------
+    //--------------remote configuration-------------------------
     char prompt[] = "shell $";
     /* Ignore death-of-child signals to prevent zombies */
     char str[200];
     char line[MAX];
     char template[] = "/tmp/myFileXXXXXX";
     int savedStdout;
-int outputFd = mkstemp(template);
+	int outputFd = mkstemp(template);
 	//---------------socket configuration----------------------
 	int serverFd, clientFd, serverLen, clientLen, client2, port;
 	struct sockaddr_in serverINETAddress; /* Server address */
@@ -45,17 +47,21 @@ int outputFd = mkstemp(template);
 	char *message;
 	port = 8888;
 	signal (SIGCHLD, SIG_IGN);
+
 	serverSockAddrPtr = (struct sockaddr*) &serverINETAddress;
     serverLen = sizeof (serverINETAddress);
     clientSockAddrPtr = (struct sockaddr*) &clientINETAddress;
     clientLen = sizeof (clientINETAddress);
+
 	unlink ("recipe"); /* Remove file if it already exists */
 	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
-    /* Create a UNIX socket, bidirectional, default protocol */
+
+    /* Create an INET socket, bidirectional, default protocol */
     serverFd = socket (AF_INET, SOCK_STREAM, DEFAULT_PROTOCOL);
     serverINETAddress.sin_family = AF_INET; /* Set domain type */
     serverINETAddress.sin_addr.s_addr = htonl (INADDR_ANY);
     serverINETAddress.sin_port = htons (port);
+
     bind (serverFd, serverSockAddrPtr, serverLen); /* Create file */
     listen (serverFd, 5); /* Maximum pending connection length */
     fprintf(stderr, "\nlilbash is listening for connections on port[%d]...\n", port);
@@ -84,7 +90,7 @@ int outputFd = mkstemp(template);
             		parseArguments(commandsRight, argsRight);
 					if ((strcmp(argsRight[0], "exit") == 0) || (strcmp(argsLeft[0], "exit") == 0)) {
                 		break;
-           		}
+           			}
             		executeTwo(argsLeft, argsRight);
 				}
 					dup2(savedStdout, 1);
@@ -113,6 +119,11 @@ int outputFd = mkstemp(template);
 	close(clientFd);
 }
 /****************************************************************/
+
+/** Reads line from file descriptor into str
+*   @param fd File Descriptor
+*   @param *str Variable set with str
+*/
 readLine (int fd, char *str)
 /* Read a single NULL-terminated line */
 {
@@ -124,6 +135,7 @@ readLine (int fd, char *str)
     while ((n > 0) && *str++ != '\0');
     return (n > 0); /* Return false if end-of-input */
 }
+
 /** Parse the inputString into an 2 arrays separated by pipes
 *   @param **inputString String of input
 *   @param **commandsLeft Commands on the left of the pipe
